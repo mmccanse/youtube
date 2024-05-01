@@ -20,7 +20,7 @@ OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 def header():
     colored_header(
         label ="YouTube Chat Assistant",
-        description = "Find a YouTube video with accurate captions. Enter the url below.",
+        description = "Find a YouTube video with accurate captions. Enter url below.",
         color_name='light-blue-40'   
     )
     # additional styling
@@ -124,30 +124,32 @@ def display_response(response, history):
     for prompts in reversed(history):
         st.markdown(f"**Question:** {prompts[0]}")
         st.markdown(f"**Answer:** {prompts[1]}")
-        st.divider()
+        st.divider()  
 
-def reset_session_state():
-    keys_to_reset = ['vector_store', 'chat_history', 'crc', 'history']
-    for key in keys_to_reset:
-        if key in st.session_state:
-            del st.session_state[key]  
+def reset_session_state(keys=None):
+    """ Reset specific keys in session state or all if keys is None """
+    if keys is None:
+        st.session_state.clear()
+    else:
+        for key in keys:
+            if key in st.session_state:
+                del st.session_state[key]
+
 
 # Define main function
 def main():
-    if 'history' not in st.session_state:
-        st.session_state['history'] = []
+    
     header()
     youtube_url = st.text_input('Input YouTube URL')
     process_video = video_button()
-
-
-
-    if process_video and youtube_url:
+    
+    # initialize history
+    if 'history' not in st.session_state:
+        st.session_state['history'] = []
         
-        #reset session state for new video
-        for key in ['vector_store', 'chat_history', 'crc']:
-            if key in st.session_state:
-                del st.session_state[key]
+    if process_video and youtube_url:
+        # Clear relevant session state keys for new video processing
+        reset_session_state(keys=['vector_store', 'crc'])
             
         with st.spinner('Reading, chunking, and embedding...'):
             
@@ -164,20 +166,21 @@ def main():
             st.session_state['crc'] = crc
             st.success('Video processed and ready for queries')
             
-
     question = st.text_area('Input your question')
-    if question_button_and_style():
-        if 'crc' in st.session_state:
-            response, updated_history = handle_question(question, st.session_state['crc'], st.session_state['history'])
-            st.session_state['history'] = updated_history
-            display_response(response, updated_history)
     
-    if clear_button():
-        reset_session_state()
-        st.experimental_rerun()
-            
-for the_values in st.session_state.values():
-    st.write(the_values)
+    col1, col2 = st.columns(2)
+    with col1:
+        submit_question = question_button_and_style()
+    with col2:
+        if clear_button():
+            reset_session_state()
+            st.experimental_rerun()
+    
+    if submit_question and 'crc' in st.session_state:
+        response, updated_history = handle_question(question, st.session_state['crc'], st.session_state['history'])
+        st.session_state['history'] = updated_history
+        display_response(response, updated_history)
+
 
 if __name__== '__main__':
     main()
