@@ -1,10 +1,10 @@
 import os
 import streamlit as st
-from langchain import OpenAI 
+from langchain import OpenAI
 from langchain.chat_models import ChatOpenAI
-from langchain.text_splitter import RecursiveCharacterTextSplitter 
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma 
+from langchain.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.document_loaders import YoutubeLoader
 from streamlit_extras.colored_header import colored_header
@@ -21,7 +21,7 @@ def header():
     colored_header(
         label ="YouTube Chat Assistant",
         description = "Find a YouTube video with accurate captions. Enter the url below.",
-        color_name='light-blue-40'   
+        color_name='light-blue-40'
     )
     # additional styling
     st.markdown("""
@@ -50,7 +50,7 @@ def header():
     """, unsafe_allow_html=True)
 
 # Define button style/formatting
-    
+
 def video_button():
     with stylable_container(
         key="video",
@@ -90,7 +90,7 @@ def clear_button():
                 """
     ) as container:
         return st.button("Clear all")
-    
+
 # End styles section ###########################################################################
 
 # Define functions #############################################################################
@@ -130,7 +130,7 @@ def reset_session_state():
     keys_to_reset = ['vector_store', 'chat_history', 'crc', 'history']
     for key in keys_to_reset:
         if key in st.session_state:
-            del st.session_state[key]  
+            del st.session_state[key]
 
 # Define main function
 def main():
@@ -140,17 +140,13 @@ def main():
     youtube_url = st.text_input('Input YouTube URL')
     process_video = video_button()
 
-
-
     if process_video and youtube_url:
-        
-        #reset session state for new video
-        for key in ['vector_store', 'chat_history', 'crc']:
-            if key in st.session_state:
-                del st.session_state[key]
-            
+
+        # Reset session state for new video
+        reset_session_state()
+
         with st.spinner('Reading, chunking, and embedding...'):
-            
+
             loader = YoutubeLoader.from_youtube_url(youtube_url)
             documents = loader.load()
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=200)
@@ -163,7 +159,6 @@ def main():
             crc = ConversationalRetrievalChain.from_llm(llm,retriever)
             st.session_state['crc'] = crc
             st.success('Video processed and ready for queries')
-            
 
     question = st.text_area('Input your question')
     if question_button_and_style():
@@ -171,11 +166,11 @@ def main():
             response, updated_history = handle_question(question, st.session_state['crc'], st.session_state['history'])
             st.session_state['history'] = updated_history
             display_response(response, updated_history)
-    
+
     if clear_button():
         reset_session_state()
         st.experimental_rerun()
-            
+
 for the_values in st.session_state.values():
     st.write(the_values)
 
