@@ -147,7 +147,11 @@ def clear_persistent_data(directory):
         
 def process_new_video(youtube_url):
     """ Handles loading, splitting, and embedding a new video """
-    
+
+    # Clear previous session state and persistent data before processing new video
+    reset_session_state(keys=['vector_store', 'crc', 'history'])
+    clear_persistent_data('db2')
+
     loader = YoutubeLoader.from_youtube_url(youtube_url)
     documents = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=200)
